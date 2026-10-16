@@ -1,0 +1,9 @@
+{
+  "sample_rate": 16000,
+  "bitrate": "96k",
+  "denoise": true,
+  "output_mode": "custom",
+  "output_dir": "G:/51_德语/14_Havelhoehe",
+  "jobs": 2,
+  "ui_scale": 1.0
+}

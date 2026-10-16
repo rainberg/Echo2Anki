@@ -1,0 +1,22 @@
+{
+  "name": "Anki 德语听力卡片生成器",
+  "short_name": "Anki听力",
+  "description": "德语听力音频转Anki卡片，支持多引擎转录和翻译",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4A90D9",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

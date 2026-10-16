@@ -1,0 +1,11 @@
+streamlit>=1.35.0
+faster-whisper>=1.0.0
+numpy>=1.24.0
+pydub>=0.25.1
+genanki>=0.13.0
+deep-translator>=1.11.0
+requests>=2.31.0
+torch>=2.1.0
+librosa>=0.10.0
+transformers>=4.36.0
+anki>=25.0.0

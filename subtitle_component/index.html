@@ -1,0 +1,273 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    :root {
+      color-scheme: light;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: #1f2933;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .wrap {
+      display: grid;
+      gap: 12px;
+    }
+
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: #5b6472;
+      font-size: 13px;
+    }
+
+    .list {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #d8dee9;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .cue {
+      display: grid;
+      grid-template-columns: 58px 1fr 36px;
+      gap: 10px;
+      align-items: start;
+      min-height: 58px;
+      padding: 10px 12px;
+      border-bottom: 1px solid #edf0f5;
+      cursor: pointer;
+    }
+
+    .cue:last-child {
+      border-bottom: 0;
+    }
+
+    .cue:hover {
+      background: #f7f9fc;
+    }
+
+    .cue.active {
+      background: #fff4cc;
+      box-shadow: inset 3px 0 0 #d99b00;
+    }
+
+    .cue.selected {
+      background: #eaf7ef;
+    }
+
+    .cue.selected.active {
+      background: #fff1b8;
+      box-shadow: inset 3px 0 0 #138a45;
+    }
+
+    .time {
+      padding-top: 2px;
+      color: #697386;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .de {
+      margin-bottom: 4px;
+      font-size: 16px;
+      line-height: 1.45;
+    }
+
+    .zh {
+      color: #475467;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .mark {
+      width: 24px;
+      height: 24px;
+      margin-top: 2px;
+      border: 1px solid #aab4c0;
+      border-radius: 4px;
+      background: #fff;
+      color: transparent;
+      cursor: pointer;
+      font-weight: 700;
+      line-height: 20px;
+    }
+
+    .mark:hover {
+      border-color: #64748b;
+    }
+
+    .cue.selected .mark {
+      border-color: #0b7a3b;
+      background: #dff5e8;
+      color: #0b7a3b;
+    }
+
+    audio {
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="meta">
+      <span id="now">00:00</span>
+      <span id="count">0 selected</span>
+    </div>
+    <div id="list" class="list"></div>
+    <audio id="player" controls preload="metadata"></audio>
+  </div>
+
+  <script>
+    const Streamlit = {
+      READY: "streamlit:componentReady",
+      RENDER: "streamlit:render",
+      SET_VALUE: "streamlit:setComponentValue",
+      SET_HEIGHT: "streamlit:setFrameHeight",
+      send(type, data) {
+        window.parent.postMessage({ isStreamlitMessage: true, type, ...data }, "*");
+      },
+      setValue(value) {
+        this.send(this.SET_VALUE, { value, dataType: "json" });
+      },
+      setHeight(height) {
+        this.send(this.SET_HEIGHT, { height });
+      },
+    };
+
+    const player = document.getElementById("player");
+    const list = document.getElementById("list");
+    const now = document.getElementById("now");
+    const count = document.getElementById("count");
+    let cues = [];
+    let selected = new Set();
+    let nodes = [];
+    let active = -1;
+    let audioUrl = "";
+
+    function fmt(seconds) {
+      const s = Math.max(0, Math.floor(seconds || 0));
+      return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+    }
+
+    function escapeText(value) {
+      return String(value || "").replace(/[&<>"']/g, c => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      }[c]));
+    }
+
+    function selectedList() {
+      return Array.from(selected).sort((a, b) => a - b);
+    }
+
+    function updateCount() {
+      count.textContent = `${selected.size} selected / ${cues.length} cues`;
+    }
+
+    function applySelectedClass(index) {
+      if (nodes[index]) {
+        nodes[index].classList.toggle("selected", selected.has(index));
+      }
+    }
+
+    function sendFavorites() {
+      updateCount();
+      Streamlit.setValue({ favorites: selectedList() });
+    }
+
+    function render(args) {
+      cues = Array.isArray(args.cues) ? args.cues : [];
+      selected = new Set(Array.isArray(args.favorites) ? args.favorites : []);
+      audioUrl = args.audio_url || "";
+      active = -1;
+      nodes = [];
+      list.innerHTML = "";
+
+      if (player.getAttribute("src") !== audioUrl) {
+        player.setAttribute("src", audioUrl);
+      }
+
+      cues.forEach((cue, index) => {
+        const el = document.createElement("div");
+        const button = document.createElement("button");
+        el.className = "cue";
+        el.innerHTML = `<div class="time">${fmt(cue.start)}<br>#${cue.index}</div><div><div class="de">${escapeText(cue.german)}</div><div class="zh">${escapeText(cue.chinese)}</div></div>`;
+        button.className = "mark";
+        button.type = "button";
+        button.setAttribute("aria-label", `Select cue ${cue.index}`);
+        button.textContent = "✓";
+        button.addEventListener("click", event => {
+          event.stopPropagation();
+          if (selected.has(index)) {
+            selected.delete(index);
+          } else {
+            selected.add(index);
+          }
+          applySelectedClass(index);
+          sendFavorites();
+        });
+        el.appendChild(button);
+        el.addEventListener("click", () => {
+          player.currentTime = Number(cue.start) || 0;
+          player.play();
+        });
+        list.appendChild(el);
+        nodes.push(el);
+        applySelectedClass(index);
+      });
+
+      updateCount();
+      requestAnimationFrame(() => {
+        const height = Math.ceil(document.querySelector(".wrap").getBoundingClientRect().height) + 2;
+        Streamlit.setHeight(height);
+      });
+    }
+
+    player.addEventListener("timeupdate", () => {
+      const t = player.currentTime;
+      now.textContent = fmt(t);
+      let next = -1;
+      for (let i = 0; i < cues.length; i++) {
+        if (t >= cues[i].start && t <= cues[i].end + 0.15) {
+          next = i;
+          break;
+        }
+      }
+      if (next !== active) {
+        if (active >= 0 && nodes[active]) {
+          nodes[active].classList.remove("active");
+        }
+        active = next;
+        if (active >= 0 && nodes[active]) {
+          nodes[active].classList.add("active");
+          nodes[active].scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
+      }
+    });
+
+    window.addEventListener("message", event => {
+      if (!event.data || event.data.type !== Streamlit.RENDER) {
+        return;
+      }
+      render(event.data.args || {});
+    });
+
+    Streamlit.send(Streamlit.READY, { apiVersion: 1 });
+    Streamlit.setHeight(410);
+  </script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: anki
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-anki_db_2026_secure}
+      POSTGRES_DB: anki
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U anki"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      ANKI_DATABASE_URL: postgresql+asyncpg://anki:${POSTGRES_PASSWORD:-anki_db_2026_secure}@db:5432/anki
+      ANKI_DATABASE_URL_SYNC: postgresql://anki:${POSTGRES_PASSWORD:-anki_db_2026_secure}@db:5432/anki
+    volumes:
+      - task_data:/var/lib/anki/tasks
+      - upload_data:/var/lib/anki/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  task_data:
+  upload_data:

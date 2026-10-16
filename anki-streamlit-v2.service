@@ -1,0 +1,19 @@
+[Unit]
+Description=Anki Streamlit v2 (Async Processing)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Environment=PATH=/opt/anki-venv/bin:/usr/bin:/bin
+Environment=ANKI_V2_TASK_DIR=/var/lib/anki-v2/tasks
+Environment=ANKI_PUSH_MODE=sync_client
+Environment=ANKI_SYNC_USERNAME=anki_user
+Environment=ANKI_SYNC_PASSWORD=anki_sync_2024
+Environment=ANKI_SYNC_MEDIA_TIMEOUT_SECS=300
+ExecStart=/opt/anki-venv/bin/streamlit run /opt/anki-app/app_v2.py --server.port 8501 --server.address 127.0.0.1 --server.enableCORS false --server.enableXsrfProtection false --server.headless true --browser.serverAddress anki.3mudi.com --browser.serverPort 443
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

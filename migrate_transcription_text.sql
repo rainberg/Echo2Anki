@@ -1,0 +1,1 @@
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS transcription_text TEXT DEFAULT '';

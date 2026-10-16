@@ -1,0 +1,10 @@
+ALTER INDEX idx_push_record_items_segment OWNER TO anki;
+ALTER INDEX idx_push_record_items_record OWNER TO anki;
+ALTER INDEX idx_public_shares_user OWNER TO anki;
+ALTER INDEX idx_public_shares_difficulty OWNER TO anki;
+ALTER INDEX idx_public_shares_category OWNER TO anki;
+ALTER INDEX idx_public_shares_duration OWNER TO anki;
+ALTER INDEX idx_public_shares_featured OWNER TO anki;
+ALTER INDEX idx_public_shares_shared_at OWNER TO anki;
+ALTER INDEX idx_public_collects_user OWNER TO anki;
+ALTER INDEX idx_public_collects_share OWNER TO anki;
